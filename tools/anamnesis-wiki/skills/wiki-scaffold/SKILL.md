@@ -21,6 +21,17 @@ If `wiki/` already exists, stop. Tell the developer to use `wiki-maintain` to up
 
 ---
 
+## Community skills
+
+If available, use these automatically:
+
+- **`mermaid`** — when generating the architecture diagram in `wiki/architecture.md`.
+- **`architecture-decision-records`** — when creating any ADR files in `wiki/decisions/`.
+
+Both degrade gracefully if absent.
+
+---
+
 ## What scaffold does differently from bootstrap
 
 Bootstrap runs a phased Socratic session — it demonstrates understanding, probes decisions, and clarifies contradictions before writing a word. That process takes time and requires the developer's active participation.

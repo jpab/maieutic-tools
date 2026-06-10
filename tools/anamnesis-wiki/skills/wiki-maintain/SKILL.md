@@ -25,6 +25,17 @@ Called manually after changes made outside socratic-dev:
 
 ---
 
+## Community skills
+
+If available, use these automatically — no explicit invocation needed:
+
+- **`architecture-decision-records`** — when creating new ADR files in `wiki/decisions/`, use it for formatting and template selection.
+- **`mermaid`** — when updating `wiki/architecture.md` with a revised diagram, use it to generate correct Mermaid syntax.
+
+Both degrade gracefully: if absent, use the inline ADR format from wiki-bootstrap and write Mermaid syntax directly.
+
+---
+
 ## Precondition
 
 If `wiki/` does not exist in the project root, stop. Tell the developer to run `wiki-bootstrap` or `wiki-scaffold` to create the wiki first.

@@ -93,6 +93,20 @@ On other platforms, the host agent follows the same methodology directly from th
 
 ---
 
+## Optional community skills
+
+anamnesis-wiki works standalone. If you have these community skills installed, bootstrap will use them automatically for better output:
+
+| Skill | What it improves | Source |
+|-------|-----------------|--------|
+| `mermaid` | Architecture diagrams — reads actual Mermaid syntax docs, produces reliably correct output across 20+ diagram types | [WH-2099/mermaid-skill](https://github.com/WH-2099/mermaid-skill) |
+| `architecture-decision-records` | ADR formatting — 5 templates (MADR, lightweight, Y-statement, deprecation, RFC), review checklist, lifecycle states | [sickn33/antigravity-awesome-skills](https://github.com/sickn33/antigravity-awesome-skills) |
+| `doc-coauthoring` | README and operations docs — structured 3-stage workflow with reader testing via sub-agent | [sickn33/antigravity-awesome-skills](https://github.com/sickn33/antigravity-awesome-skills) |
+
+None are required. Bootstrap falls back gracefully to its own inline templates when they're absent.
+
+---
+
 ## Pairing with socratic-dev
 
 anamnesis-wiki works standalone, but it reaches its full value paired with [socratic-dev](../socratic-dev/).

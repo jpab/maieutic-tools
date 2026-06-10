@@ -74,6 +74,7 @@ Rules:
 - Only ask about decisions that are significant enough to warrant an ADR. Don't ask about incidental choices.
 - Maximum 5–7 questions in this phase. Batch them — don't ask one at a time.
 - Record every answer. These become the `decisions/` entries in the wiki.
+- If the `architecture-decision-records` skill is available, it will be used when writing the ADR files — no need to format during this phase, just capture the substance.
 
 ---
 
@@ -102,9 +103,13 @@ An index and orientation document. Explain the wiki's structure, what each file 
 
 System overview and component map. Cover: what the system does, its major components (named as the codebase names them), how they interact, the technology stack, and the key patterns in use. Use the confirmed summary from Phase 1 and the answers from Phase 2. Use `[[wiki-links]]` to reference decisions and glossary terms.
 
+Include a diagram showing the main components and their interactions. If the `mermaid` skill is available, invoke it to generate the diagram — it reads actual Mermaid syntax reference docs and produces reliably correct output. Otherwise generate Mermaid syntax directly, using a flowchart for pipeline/batch systems or a sequence diagram for interaction-heavy systems.
+
 ### `wiki/decisions/`
 
-One file per architectural decision surfaced in Phase 2. Use ADR format:
+One file per architectural decision surfaced in Phase 2.
+
+If the `architecture-decision-records` skill is available, invoke it for ADR formatting — it provides richer templates and review guidance. Otherwise use this format:
 
 ```markdown
 # <Decision title>
@@ -113,17 +118,35 @@ One file per architectural decision surfaced in Phase 2. Use ADR format:
 Accepted
 
 ## Context
-<Why this decision needed to be made>
+<Why this decision needed to be made — the problem, the constraints, what made this non-obvious>
+
+## Decision Drivers
+- <key factor that shaped the decision>
+- <key factor>
+
+## Considered Options
+- <Option A> — <one-line summary of why considered or rejected>
+- <Option B>
 
 ## Decision
-<What was decided>
-
-## Alternatives considered
-<What was ruled out and why>
+<What was decided and why it won>
 
 ## Consequences
-<What this decision constrains or enables>
+
+### Positive
+- <what this enables>
+
+### Negative
+- <what this constrains or costs>
+
+### Risks
+- <what could go wrong, and the mitigation>
+
+## Related decisions
+- <link to other wiki/decisions/ entries if any>
 ```
+
+File naming: `<YYYY-MM-DD>-<short-slug>.md`
 
 ### `wiki/debt.md`
 
