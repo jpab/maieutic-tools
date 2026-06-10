@@ -44,13 +44,23 @@ Works standalone. Pairs manually with socratic-dev when you can't choose between
 
 ```bash
 # full collection
-npx skills add jpab/maieutic-tools
+npx skills@latest add jpab/maieutic-tools -g
 
 # individual tools
-npx skills add jpab/maieutic-tools/tools/socratic-dev
-npx skills add jpab/maieutic-tools/tools/anamnesis-wiki
-npx skills add jpab/maieutic-tools/tools/dialectic-synthesis
+npx skills@latest add jpab/maieutic-tools/tools/socratic-dev
+npx skills@latest add jpab/maieutic-tools/tools/anamnesis-wiki
+npx skills@latest add jpab/maieutic-tools/tools/dialectic-synthesis
 ```
+
+### Claude Code: multi-agent layer
+
+The skills above work on any agentskills.io-compatible tool. If you use Claude Code, run a second step to install the subagent definitions that activate the full multi-agent layer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh
+```
+
+This copies the agent files to `~/.claude/agents/`. Without this step, each tool falls back to solo mode — one agent following the methodology in sequence rather than parallel specialists. See [docs/cross-platform.md](docs/cross-platform.md) for what the difference means in practice.
 
 ---
 
