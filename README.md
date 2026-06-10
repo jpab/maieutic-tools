@@ -22,13 +22,21 @@ Works standalone. Pairs naturally with anamnesis-wiki.
 
 ### [anamnesis-wiki](tools/anamnesis-wiki/)
 
-A living codebase knowledge base, inspired by [Andrej Karpathy's LLM Wiki pattern](https://karpathy.ai/zero-to-hero.html). Not RAG — an agent incrementally builds and maintains a structured, interlinked markdown wiki that sits between you and the raw codebase. Architecture decisions, technical debt, runbooks, domain glossary — all maintained automatically as your codebase evolves.
+A living codebase knowledge base, inspired by [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Not RAG — an agent incrementally builds and maintains a structured, interlinked markdown wiki that sits between you and the raw codebase. Architecture decisions, technical debt, runbooks, domain glossary — all maintained automatically as your codebase evolves.
 
 Three modes: **bootstrap** reads your entire codebase first, then runs a phased Socratic session to build the wiki from genuine understanding. **scaffold** gets a baseline wiki in place quickly when bootstrap hasn't been run. **maintain** is called by socratic-dev at the end of each loop, updating only what changed.
 
 The wiki lives at `wiki/` in your project root. It's yours — plain markdown, readable by you, navigable by any agent.
 
 Works standalone. Called automatically by socratic-dev.
+
+### [dialectic-synthesis](tools/dialectic-synthesis/)
+
+A thinking tool for choosing between two things without pretending the choice is easy. You bring two artifacts — two implementations, two designs, a prototype and its rewrite, an idea and the thing you've already built. It reads each on its own terms, maps where they genuinely conflict, and produces a synthesis plan: what to take from each, what to discard, how to resolve the real conflicts. A decision document, not a diff.
+
+The reading is blind — each artifact is understood before the goals enter, so the analysis can't bend toward a foregone conclusion. The verdict is honest: not a lazy winner, usually "this one is the base, and here's what's worth grafting from the other."
+
+Works standalone. Pairs manually with socratic-dev when you can't choose between two proposed plans.
 
 ---
 
@@ -41,6 +49,7 @@ npx skills add jpab/maieutic-tools
 # individual tools
 npx skills add jpab/maieutic-tools/tools/socratic-dev
 npx skills add jpab/maieutic-tools/tools/anamnesis-wiki
+npx skills add jpab/maieutic-tools/tools/dialectic-synthesis
 ```
 
 ---

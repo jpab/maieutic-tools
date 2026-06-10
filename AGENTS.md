@@ -25,17 +25,28 @@ maieutic-tools/
 │   │       ├── ideation.md          # proposes plans
 │   │       └── implementation.md    # executes approved plan
 │   │
-│   └── anamnesis-wiki/
+│   ├── anamnesis-wiki/
+│   │   ├── README.md
+│   │   ├── skills/
+│   │   │   ├── wiki-bootstrap/
+│   │   │   │   └── SKILL.md         # full Socratic wiki build from scratch
+│   │   │   ├── wiki-scaffold/
+│   │   │   │   └── SKILL.md         # fast baseline wiki, no Socratic session
+│   │   │   └── wiki-maintain/
+│   │   │       └── SKILL.md         # surgical updates after implementation loops
+│   │   └── agents/
+│   │       └── wiki-writer.md       # handles all three modes on Claude Code
+│   │
+│   └── dialectic-synthesis/
 │       ├── README.md
 │       ├── skills/
-│       │   ├── wiki-bootstrap/
-│       │   │   └── SKILL.md         # full Socratic wiki build from scratch
-│       │   ├── wiki-scaffold/
-│       │   │   └── SKILL.md         # fast baseline wiki, no Socratic session
-│       │   └── wiki-maintain/
-│       │       └── SKILL.md         # surgical updates after implementation loops
-│       └── agents/
-│           └── wiki-writer.md       # handles all three modes on Claude Code
+│       │   └── dialectic-synthesis/
+│       │       └── SKILL.md         # four-phase two-artifact synthesis methodology
+│       └── agents/                  # Claude Code native subagents
+│           ├── goal-elicitation.md  # asks questions, no file access
+│           ├── artifact-reader.md   # reads one artifact, blind to goals (runs 2×, parallel)
+│           ├── tension-mapper.md    # maps conflicts/complements against goals
+│           └── synthesis-planner.md # writes the decision document
 │
 └── docs/
     ├── philosophy.md
@@ -76,6 +87,23 @@ wiki/
 └── glossary.md
 ```
 
+### dialectic-synthesis
+
+A thinking tool, not an execution tool. Takes exactly two artifacts (code, designs, specs, prototypes, or prose ideas) and produces a synthesis plan — what to take from each, what to discard, how to resolve genuine conflicts. A decision document, never a diff. It never merges anything.
+
+Four phases (0–3), one subagent each:
+- `goal-elicitation` — establishes the goal anchor; questions only, no file access
+- `artifact-reader` — reads one artifact blind to the goals (runs twice, in parallel)
+- `tension-mapper` — maps conflicts/complements against the goals; goals enter here
+- `synthesis-planner` — writes the decision document
+
+Key behaviours:
+- Exactly two artifacts — rejects more
+- Blind reading firewall: artifacts are understood before goals enter, so analysis can't bend to a foregone conclusion
+- No state machine — one-shot thinking pass, no `--resume`/`--close` (unlike socratic-dev)
+- Output: `.dialectic/<name>-synthesis.md` (committable, not gitignored — it's the deliverable)
+- Not a lazy winner: verdict is a spectrum from pure-winner to balanced hybrid; usually "base + grafts"
+
 ## Distribution
 
 Tools are distributed via [agentskills.io](https://agentskills.io):
@@ -84,6 +112,7 @@ Tools are distributed via [agentskills.io](https://agentskills.io):
 npx skills add jpab/maieutic-tools
 npx skills add jpab/maieutic-tools/tools/socratic-dev
 npx skills add jpab/maieutic-tools/tools/anamnesis-wiki
+npx skills add jpab/maieutic-tools/tools/dialectic-synthesis
 ```
 
 SKILL.md files work on 30+ agent tools. `.claude/agents/` definitions activate a multi-agent layer on Claude Code — same methodology, parallel specialist execution.
