@@ -83,6 +83,10 @@ Create the directory. If operational procedures exist anywhere in the repo, extr
 
 List domain-specific terms visible in the code (entity names, key abstractions, domain nouns used in variable names, API paths, or documentation). Mark uncertain definitions with `<!-- TODO: verify -->`.
 
+### `wiki/patterns/` (skip for scaffold)
+
+Do not create this directory during scaffold. It is populated by wiki-maintain when patterns emerge from repeated decisions. Leave it absent — wiki-maintain will create it when the first pattern earns filing.
+
 ---
 
 ## Final output

@@ -19,10 +19,11 @@ wiki/
 ├── decisions/         ← one file per architectural decision (ADR format)
 ├── debt.md            ← known technical debt, tagged by severity
 ├── runbooks/          ← operational procedures
-└── glossary.md        ← domain terms and their meaning in the codebase
+├── glossary.md        ← domain terms and their meaning in the codebase
+└── patterns/          ← recurring solutions (created by wiki-maintain when patterns emerge)
 ```
 
-Pages interlink with `[[wiki-links]]`. The wiki grows with your codebase — new decisions get their own file in `decisions/`, new debt gets an entry in `debt.md`, new runbooks appear in `runbooks/`.
+Pages interlink with `[[wiki-links]]`. The wiki grows with your codebase — new decisions get their own file in `decisions/`, new debt gets an entry in `debt.md`, new runbooks appear in `runbooks/`. `patterns/` is created automatically by wiki-maintain when a solution recurs enough to be worth naming.
 
 ---
 
@@ -64,7 +65,7 @@ Updates the wiki after an implementation loop. Called automatically by socratic-
 /wiki-maintain
 ```
 
-maintain receives a structured handoff from socratic-dev: what was built, what decisions were locked in during implementation, any technical debt introduced. It updates the specific pages that changed — a new file in `decisions/`, an entry appended to `debt.md`, an updated section in `architecture.md` — without re-reading the whole codebase.
+maintain receives a structured handoff from socratic-dev: what was built, what decisions were locked in during implementation, any technical debt introduced. It updates the specific pages that changed — a new file in `decisions/`, an entry appended to `debt.md`, an updated section in `architecture.md` — without re-reading the whole codebase. It always outputs an audit list of which pages were considered and not updated, so nothing is silently skipped.
 
 If you want to update the wiki after a change made outside a socratic-dev session, you can invoke maintain manually and describe what changed.
 

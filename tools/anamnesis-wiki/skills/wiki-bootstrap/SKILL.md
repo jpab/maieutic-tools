@@ -151,6 +151,39 @@ Domain terms and their meaning in this codebase specifically. Not general progra
 <What it means in this codebase, not in general>
 ```
 
+### `wiki/patterns/` (optional)
+
+Create this directory only if recurring solutions are already visible — two or more decisions that solve the same shape of problem, or patterns explicitly noted in code comments or docs. If none are visible, skip it. wiki-maintain will create it when the first pattern earns filing.
+
+If created, add `wiki/patterns/README.md`:
+
+```markdown
+# Patterns
+
+Recurring solutions that have appeared across multiple decisions or sessions.
+
+| Pattern | When to use |
+|---------|-------------|
+```
+
+---
+
+## Final step — agent entry point
+
+After writing the wiki, create or update the agent entry point at the project root:
+
+1. Check if `CLAUDE.md` exists at the project root.
+   - If yes: add a line under the first heading (or at the top if unstructured): `See [wiki/README.md](wiki/README.md) for the full codebase wiki.` Do not overwrite any existing content.
+   - If no: create `AGENTS.md` with:
+
+```markdown
+# AGENTS.md
+
+See [wiki/README.md](wiki/README.md) for the full codebase wiki.
+```
+
+This ensures any agent that reads `CLAUDE.md` or `AGENTS.md` on startup will find the wiki without needing to know its location.
+
 ---
 
 ## Final output
@@ -158,5 +191,6 @@ Domain terms and their meaning in this codebase specifically. Not general progra
 Tell the developer:
 - Where the wiki was written
 - How many decisions, debt entries, and glossary terms were captured
+- Whether `AGENTS.md` was created or `CLAUDE.md` was updated
 - That they should review `wiki/decisions/` and correct anything that does not match their intent
 - That if socratic-dev is installed, it will read and maintain this wiki automatically from now on
