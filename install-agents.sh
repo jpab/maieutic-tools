@@ -15,9 +15,11 @@ AGENTS_DIR="${HOME}/.claude/agents"
 
 AGENTS=(
   "tools/socratic-dev/agents/task-context.md"
+  "tools/socratic-dev/agents/task-evaluator.md"
   "tools/socratic-dev/agents/codebase-context.md"
   "tools/socratic-dev/agents/ideation.md"
   "tools/socratic-dev/agents/implementation.md"
+  "tools/socratic-dev/agents/critic.md"
   "tools/anamnesis-wiki/agents/wiki-writer.md"
   "tools/dialectic-synthesis/agents/goal-elicitation.md"
   "tools/dialectic-synthesis/agents/artifact-reader.md"

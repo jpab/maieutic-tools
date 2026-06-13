@@ -1,7 +1,7 @@
 ---
 name: socratic-dev
-description: Guided agentic development loop. Surfaces ambiguities, proposes plans, waits for developer approval before implementing anything.
-version: 0.1.0
+description: Guided agentic development loop. Surfaces ambiguities, checks the task is plannable, forces an option choice, and waits for explicit plan approval before any write-capable agent runs.
+version: 0.2.0
 author: jpab
 ---
 
@@ -16,8 +16,37 @@ Three ways to call this skill:
 ```
 /socratic-dev "<ticket description>"         — start a new session
 /socratic-dev --resume <session-name>        — continue a paused session
-/socratic-dev --close <session-name>         — close a completed session
+/socratic-dev --close <session-name>         — close a completed session (optional critic)
 ```
+
+---
+
+## Agent topology and the boundary that makes the loop safe
+
+This skill is orchestrated by you, the main session. You delegate the heavy phases to subagents and you own every write to `.socratic/`.
+
+The loop has one structural guarantee: **no write-capable agent runs before the developer has approved the full plan.** This is not a prose promise the implementation agent makes to itself — it is enforced by tool grants.
+
+- `task-context`, `task-evaluator`, `codebase-context`, and `ideation` are **read-only by grant** (`tools: [Read, Grep, Glob]`). They cannot edit code. They return structured markdown; **you** persist it to the session and plan files.
+- `implementation` is the **only** write-capable agent. You do not invoke it until both approval gates below have passed.
+- `critic` (at `--close`) is **read-only**.
+
+The flow, with both gates explicit:
+
+```
+task-context (questions)
+  → [developer answers]
+  → task-evaluator (sufficiency gate — halts on thin input)
+  → codebase-context
+  → ideation (named options-comparison + recommendation)
+  → [GATE 1: developer approves an option]
+  → orchestrator writes the full plan
+  → [GATE 2: developer confirms the full plan]
+  → implementation (the only write-capable agent)
+  → [--close: optional critic]
+```
+
+These gates and the read-only/write boundary are unconditional. Do not collapse them, and do not invoke `implementation` early because the task looks small.
 
 ---
 
@@ -49,92 +78,143 @@ questions-pending
 ## Answers
 <!-- to be filled -->
 
-## Plan selected
+## Task evaluation
+<!-- to be filled -->
+
+## Selected option
+<!-- to be filled -->
+
+## Plan confirmed
 <!-- to be filled -->
 
 ## Implementation notes
 <!-- to be filled -->
 ```
 
-### Step 2 — Questions phase
+**Status values** the session moves through:
+`questions-pending` → `clarification-pending` (only if the evaluator halts) → `option-pending` → `plan-pending` → `implementation-pending` → `done-pending-close` → `closed`.
 
-Before reading any code, identify what you do not know. Produce two clearly labelled sets of questions in a single response to the developer:
+### Step 2 — Questions phase (`task-context`)
 
-**Product questions** — gaps in the ticket that would prevent good planning. These are about goals, acceptance criteria, user-facing behaviour, constraints from the business side. Examples: "What is the rate limit — requests per minute, per hour?" / "What should happen when a user hits the limit — 429 with retry-after, or silent queue?"
+Invoke the `task-context` subagent with the ticket description. It is read-only and returns two labelled sets of questions:
 
-**Engineering questions** — technical unknowns that would force an assumption during planning. These are about the codebase, existing patterns, constraints from the technical side. Examples: "Is there an existing middleware chain the limit should slot into?" / "Are there internal services that should be exempt?"
+**Product questions** — gaps in the ticket that would prevent good planning. Goals, acceptance criteria, user-facing behaviour, business constraints. Examples: "What is the rate limit — requests per minute, per hour?" / "What should happen when a user hits the limit — 429 with retry-after, or silent queue?"
 
-Rules:
-- Ask only questions that genuinely affect which plan is best. Do not pad.
-- Keep each question to one sentence.
-- Do not ask questions whose answers are clearly in the ticket.
+**Engineering questions** — technical unknowns that would force an assumption during planning. Existing patterns, technical constraints. Examples: "Is there an existing middleware chain the limit should slot into?" / "Are there internal services that should be exempt?"
 
-After the developer answers, record the answers in `.socratic/<session-name>.md` under `## Answers`. Update `## Status` to `context-pending`.
+Present both sets to the developer in a single response. Record them in the session file under `## Product questions` and `## Engineering questions` — **you** write the file; the subagent does not.
 
-If the developer cannot answer a product question yet, stop here. Tell them to call `--resume <session-name>` when ready. Do not proceed to context gathering on incomplete information.
+After the developer answers, record the answers under `## Answers`. Proceed to Step 3.
 
-### Step 3 — Context gathering
+If the developer cannot answer a product question yet, stop here. Leave `## Status` at `questions-pending` and tell them to call `--resume <session-name>` when ready. Do not proceed on incomplete information.
 
-Read the codebase. Focus on what is relevant to the ticket and the questions answered. If `wiki/` exists in the project root, read `wiki/README.md`, `wiki/architecture.md`, `wiki/glossary.md`, and any relevant files in `wiki/decisions/` first — this is your map before you read the territory.
+### Step 3 — Sufficiency gate (`task-evaluator`)
 
-Then read the relevant source files, configuration, and any existing documentation.
+Before reading any code, invoke the `task-evaluator` subagent with the ticket description and the answered questions. It is read-only and does not analyse the codebase — it only judges whether the inputs are specific enough to plan against.
 
-Your goal is to understand: what already exists that this ticket touches, what patterns are established, and what constraints are real versus assumed.
+- If it returns `verdict: sufficient` — record a one-line note under `## Task evaluation` and proceed to Step 4.
+- If it returns `verdict: insufficient` — record the gaps and clarifying questions under `## Task evaluation`, set `## Status` to `clarification-pending`, and present the clarifying questions to the developer. Collect their answers, append them under `## Answers`, then re-run the evaluator. If the developer cannot answer yet, stop and tell them to `--resume` when ready.
 
-### Step 4 — Planning
+This gate prevents the loop from silently planning against thin input. It is lightweight — a false halt costs one round-trip, a missed gap costs a wrong plan.
 
-Propose 2–3 plans. Each plan must be a short paragraph — not a bullet list. Cover: what the approach is, what it trades away, and what it assumes. Make the tradeoffs explicit. Do not recommend a plan; present the options and let the developer choose.
+### Step 4 — Context gathering (`codebase-context`)
 
-Write the plans to `.socratic/<session-name>-plan.md`:
+Once the task is sufficient, invoke the `codebase-context` subagent with the ticket, the answered questions, and the session file path. It is read-only. It reads the wiki (if `wiki/` exists, starting with `wiki/README.md`, `wiki/architecture.md`, `wiki/glossary.md`, and relevant `wiki/decisions/`) before the source, then the relevant source files, configuration, and documentation.
+
+It returns a structured technical summary: relevant existing code, established patterns, real constraints, answers to the engineering questions, and any short list of genuinely open technical questions. Keep its output in context for ideation. Set `## Status` to `option-pending` once context gathering is done.
+
+### Step 5 — Options-comparison (`ideation`)
+
+Invoke the `ideation` subagent with the ticket, the answered questions, the `task-context` output, and the `codebase-context` output. It is read-only and returns a named options-comparison — 2-3 meaningfully different approaches, each a paragraph (tradeoffs and assumptions explicit), plus a recommendation that names what would flip the choice.
+
+**You** write the returned output to `.socratic/<session-name>-plan.md`:
 
 ```markdown
 # Plan: <session-name>
 
-## Option 1 — <short title>
+## Options
+
+### Option 1 — <short title>
 <paragraph>
 
-## Option 2 — <short title>
+### Option 2 — <short title>
 <paragraph>
 
-## Option 3 — <short title> (if applicable)
+### Option 3 — <short title> (if applicable)
 <paragraph>
+
+## Recommendation
+Option <N> — <why, and what would flip it>
 ```
 
-Tell the developer this file has been written and can be committed or shared. Update `## Status` to `plan-pending` in the session file.
+Tell the developer this file has been written and can be committed or shared. Leave `## Status` at `option-pending`.
 
-Stop here. Wait for `--resume`.
+Stop here. Wait for `--resume`. **GATE 1 is the developer choosing an option** — do not write the full plan or invoke any write-capable agent yet.
 
 ---
 
 ## Resuming a session (`--resume`)
 
-Read `.socratic/<session-name>.md` to determine the current status.
+Read `.socratic/<session-name>.md` to determine the current status and act on it:
 
-- `questions-pending` — the developer has answers to provide. Re-display the unanswered questions and collect the answers. Then proceed to Step 3.
-- `plan-pending` — the developer is ready to approve a plan. Re-display the plans from `.socratic/<session-name>-plan.md` and ask which they choose.
+- `questions-pending` — re-display the unanswered questions (re-invoke `task-context` if needed). Collect answers, record them, then proceed to Step 3 (sufficiency gate).
+- `clarification-pending` — re-display the evaluator's clarifying questions. Collect answers, append under `## Answers`, then re-run `task-evaluator` from Step 3.
+- `option-pending` — **GATE 1.** Re-display the options-comparison from the plan file and ask which option the developer chooses. See "Option approval" below.
+- `plan-pending` — **GATE 2.** Re-display the full plan from the plan file and ask for final confirmation to implement. See "Plan confirmation" below.
 
-### Plan approval
+### Option approval (GATE 1)
 
-The developer picks an option by number, or pushes back with modifications. If they modify:
-- Acknowledge what changed.
-- Confirm the modified plan back to them in one paragraph.
-- Ask for explicit confirmation before proceeding.
+The developer picks an option by number, or pushes back with modifications.
 
-Once a plan is confirmed, record it in `.socratic/<session-name>.md` under `## Plan selected`. Update `## Status` to `implementation-pending`.
+- If they modify an option, acknowledge what changed and confirm the modified option back to them in one sentence.
+- Record the chosen option (and any modification) in the session file under `## Selected option`.
 
-### Step 5 — Implementation
+Then **write the full plan**. Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch (grounded in `codebase-context`), what it deliberately leaves out, and any decision the developer should know is being made. Append it to the plan file:
 
-Execute the approved plan. You have: the ticket, the answered questions, the codebase context, and the confirmed plan. Do not deviate from the plan without surfacing the deviation and asking for guidance.
+```markdown
+## Selected plan
+<full plan prose for the chosen option>
+```
 
-As you implement, note any decisions made that were not in the plan (unavoidable choices, discovered constraints). Record these in `## Implementation notes` in the session file.
+You are the orchestrator writing a planning file — this is not a code write and does not breach the write-capable-agent boundary. Do not invoke the `implementation` agent here.
 
-When implementation is complete, update `## Status` to `done-pending-close`. Tell the developer to call `--close <session-name>` to complete the loop.
+Set `## Status` to `plan-pending`. Present the full plan to the developer and stop. **GATE 2 is the developer confirming this full plan.**
+
+### Plan confirmation (GATE 2)
+
+The developer confirms the full plan, or pushes back with modifications.
+
+- If they modify it, acknowledge what changed, rewrite the `## Selected plan` section, confirm it back in one paragraph, and ask for explicit confirmation again. Do not proceed on an unconfirmed plan.
+- Once confirmed, record the confirmation under `## Plan confirmed` in the session file and set `## Status` to `implementation-pending`.
+
+### Step 6 — Implementation (`implementation`)
+
+Only now invoke the `implementation` subagent — the **only** write-capable agent in the loop. Pass it the ticket, the answered questions, the confirmed `## Selected plan`, any developer annotations, and the `codebase-context` output.
+
+It executes the approved plan and does not deviate without surfacing the deviation and asking for guidance. As it implements, it records decisions made that were not in the plan (unavoidable choices, discovered constraints) under `## Implementation notes` in the session file.
+
+When implementation is complete, set `## Status` to `done-pending-close`. Tell the developer to call `--close <session-name>` to complete the loop.
 
 ---
 
 ## Closing a session (`--close`)
 
 Read `.socratic/<session-name>.md`. Confirm status is `done-pending-close`.
+
+### Step 7a — Optional critic
+
+Ask the developer whether they want an adversarial review of what was built against the approved plan:
+
+```
+Run the critic before closing? It diffs the implementation against the approved
+plan and flags divergences and unresolved questions. (y / n)
+```
+
+If yes, invoke the `critic` subagent (read-only) with the session file path, the plan file path, and the base ref/branch to diff against (or an instruction to diff the working tree). It returns a `## SESSION_CLOSE_NOTE` block. **You** append that block to `.socratic/<session-name>-plan.md`. The critic does not block — it produces a record the developer reads and decides on.
+
+If no, skip to Step 7b.
+
+### Step 7b — Handoff
 
 Generate a structured handoff — a short markdown summary:
 
@@ -162,8 +242,14 @@ Update `## Status` to `closed`. The session is complete.
 
 ## Rules that apply throughout
 
-- Never implement anything before a plan has been explicitly approved.
+- The read-only/write boundary is structural, not advisory: never invoke `implementation` (the only write-capable agent) before GATE 2 has passed. Every other agent is read-only by grant.
+- The orchestrator owns every write to `.socratic/`. Read-only subagents return markdown; you persist it.
+- Never skip the sufficiency gate, the option gate, or the plan-confirmation gate because the task looks small.
 - Never assume an answer to a question — surface it.
-- Never auto-close the loop — `--close` is always a deliberate developer action.
-- If the wiki exists, always read it before reading source code.
+- Never auto-close the loop — `--close` is always a deliberate developer action, and the critic within it is opt-in.
+- If the wiki exists, `codebase-context` always reads it before source.
 - Keep all responses factual and direct. No hype, no filler, no unsolicited suggestions outside the current phase.
+
+## On non-Claude-Code platforms
+
+The subagents above are the Claude Code multi-agent layer. On platforms without subagents, a single agent follows the same methodology in sequence — but the tool-grant boundary becomes behavioural rather than structural. There, the agent must hold the read-only/implement separation by discipline: do not edit code until both gates have passed. The structural guarantee is only as strong as the platform; on Claude Code it is enforced by grant.
