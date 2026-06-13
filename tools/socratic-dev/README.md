@@ -50,6 +50,8 @@ Once the task is sufficient, `codebase-context` reads the repo — the wiki firs
 
 **Gate 2 — confirm the full plan.** Resume again to confirm the expanded plan, or modify it. Nothing write-capable runs until you confirm here.
 
+At either gate you can type `critic` for an adversarial second opinion before you commit — see [the critic](#the-critic) below.
+
 ```
 .socratic/
 ├── add-rate-limiting.md        ← session state
@@ -74,7 +76,19 @@ When implementation is complete, call `--close`:
 /socratic-dev --close add-rate-limiting
 ```
 
-You're first offered an **optional critic** — a read-only adversarial reviewer that diffs what was built against the approved plan and flags divergences and unresolved questions, appending a session-close note to the plan file. It does not block; it produces a record. Then `--close` generates a structured handoff — what was built, what decisions were locked in, any technical debt introduced — and calls `wiki-maintain` to update the codebase wiki. If anamnesis-wiki is not installed, it logs a recommendation and exits cleanly.
+You're first offered the **critic** on the diff — it compares what was built against the approved plan (see below). Then `--close` generates a structured handoff — what was built, what decisions were locked in, any technical debt introduced — and calls `wiki-maintain` to update the codebase wiki. If anamnesis-wiki is not installed, it logs a recommendation and exits cleanly.
+
+### The critic
+
+`critic` is a read-only, on-demand adversarial reviewer available at **all three gates**, not just the end. It doesn't validate or summarise — it produces a structured falsification attempt grounded in verbatim quotes, then gets out of the way. It never blocks and never makes the decision for you; each invocation appends a `## CRITIC_REVIEW` block to the plan file, and they stack.
+
+| Gate | What the critic reviews |
+|---|---|
+| Option choice | the options-comparison — false trichotomy, shared blind spots, missed options |
+| Plan | the full plan — untraceable scope, missing changes, silent assumptions |
+| Diff (`--close`) | the implementation vs the plan — omissions, unplanned material, tests that verify the wrong thing |
+
+Type `critic` at Gate 1 or Gate 2 before deciding; at `--close` you're asked directly.
 
 ---
 
@@ -103,7 +117,7 @@ On Claude Code, the `agents/` definitions in this directory activate a multi-age
 | `codebase-context` | read-only | Reads the repo, the wiki, and the relevant code paths |
 | `ideation` | read-only | Produces the named options-comparison and a recommendation |
 | `implementation` | **write** | Executes the confirmed plan, produces the handoff summary |
-| `critic` | read-only | Opt-in at `--close`: diffs the implementation against the approved plan |
+| `critic` | read-only | On-demand at any gate: reviews the options, the plan, or the diff against the plan |
 
 The boundary is the point: every agent except `implementation` is **read-only by grant**, so no agent can touch code before you've confirmed the plan at Gate 2. The orchestrator runs them in sequence — `task-context` → `task-evaluator` → `codebase-context` → `ideation` → [Gate 1] → [Gate 2] → `implementation` → [optional `critic`].
 

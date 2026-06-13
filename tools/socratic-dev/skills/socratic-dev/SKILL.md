@@ -29,7 +29,7 @@ The loop has one structural guarantee: **no write-capable agent runs before the 
 
 - `task-context`, `task-evaluator`, `codebase-context`, and `ideation` are **read-only by grant** (`tools: [Read, Grep, Glob]`). They cannot edit code. They return structured markdown; **you** persist it to the session and plan files.
 - `implementation` is the **only** write-capable agent. You do not invoke it until both approval gates below have passed.
-- `critic` (at `--close`) is **read-only**.
+- `critic` is **read-only** and **on-demand**. At any of the three gates the developer may ask for it before deciding — see "Invoking the critic" below.
 
 The flow, with both gates explicit:
 
@@ -39,14 +39,14 @@ task-context (questions)
   → task-evaluator (sufficiency gate — halts on thin input)
   → codebase-context
   → ideation (named options-comparison + recommendation)
-  → [GATE 1: developer approves an option]
+  → [GATE 1: developer approves an option]        ← critic available (option-choice)
   → orchestrator writes the full plan
-  → [GATE 2: developer confirms the full plan]
+  → [GATE 2: developer confirms the full plan]     ← critic available (plan)
   → implementation (the only write-capable agent)
-  → [--close: optional critic]
+  → [--close: optional critic on the diff]         ← critic available (diff)
 ```
 
-These gates and the read-only/write boundary are unconditional. Do not collapse them, and do not invoke `implementation` early because the task looks small.
+These gates and the read-only/write boundary are unconditional. Do not collapse them, and do not invoke `implementation` early because the task looks small. The critic never blocks — it produces a record the developer reads and decides on.
 
 ---
 
@@ -164,8 +164,11 @@ Read `.socratic/<session-name>.md` to determine the current status and act on it
 
 ### Option approval (GATE 1)
 
-The developer picks an option by number, or pushes back with modifications.
+When you present the options-comparison, tell the developer they can type `critic` to get an adversarial review of the options before choosing (see "Invoking the critic" — use `review_target: option-choice`).
 
+The developer picks an option by number, types `critic`, or pushes back with modifications.
+
+- If they type `critic`, run it, append its block to the plan file, and re-present this gate. Do not choose for them.
 - If they modify an option, acknowledge what changed and confirm the modified option back to them in one sentence.
 - Record the chosen option (and any modification) in the session file under `## Selected option`.
 
@@ -182,8 +185,11 @@ Set `## Status` to `plan-pending`. Present the full plan to the developer and st
 
 ### Plan confirmation (GATE 2)
 
-The developer confirms the full plan, or pushes back with modifications.
+When you present the full plan, tell the developer they can type `critic` to get an adversarial review of the plan before confirming (see "Invoking the critic" — use `review_target: plan`).
 
+The developer confirms the full plan, types `critic`, or pushes back with modifications.
+
+- If they type `critic`, run it, append its block to the plan file, and re-present this gate. Do not confirm for them.
 - If they modify it, acknowledge what changed, rewrite the `## Selected plan` section, confirm it back in one paragraph, and ask for explicit confirmation again. Do not proceed on an unconfirmed plan.
 - Once confirmed, record the confirmation under `## Plan confirmed` in the session file and set `## Status` to `implementation-pending`.
 
@@ -210,7 +216,7 @@ Run the critic before closing? It diffs the implementation against the approved
 plan and flags divergences and unresolved questions. (y / n)
 ```
 
-If yes, invoke the `critic` subagent (read-only) with the session file path, the plan file path, and the base ref/branch to diff against (or an instruction to diff the working tree). It returns a `## SESSION_CLOSE_NOTE` block. **You** append that block to `.socratic/<session-name>-plan.md`. The critic does not block — it produces a record the developer reads and decides on.
+If yes, invoke the critic with `review_target: diff` (see "Invoking the critic"). Pass the base ref/branch to diff against, or an instruction to diff the working tree. Append the returned `## CRITIC_REVIEW` block to the plan file. This close-time review is the session's record of plan-vs-implementation drift.
 
 If no, skip to Step 7b.
 
@@ -240,13 +246,38 @@ Update `## Status` to `closed`. The session is complete.
 
 ---
 
+## Invoking the critic
+
+The `critic` is an on-demand, read-only adversarial reviewer available at all three decision gates. It does not validate or summarise — it produces a structured falsification attempt grounded in verbatim quotes. The developer triggers it; you never run it unprompted (except offering it at `--close`).
+
+| Gate | When | `review_target` | What it reviews |
+|---|---|---|---|
+| Option choice | GATE 1, status `option-pending` | `option-choice` | the `## Options` + `## Recommendation` |
+| Plan | GATE 2, status `plan-pending` | `plan` | the `## Selected plan` for the chosen option |
+| Diff | `--close`, Step 7a | `diff` | the implementation diff vs the approved plan |
+
+When triggered, spawn the `critic` subagent with:
+- The `review_target` for that gate.
+- The session file path and the plan file path.
+- The relevant `codebase-context` summary inline (for `option-choice` and `plan`), or the base ref/branch (for `diff`).
+- **Already-flagged concerns (headlines only)** — if the developer has already run the critic at this same gate, pass the headlines of those prior `## CRITIC_REVIEW` blocks so it does not repeat them. Pass headlines only, never the full prior critique.
+
+When it returns:
+1. **Append** its `## CRITIC_REVIEW` block to `.socratic/<session-name>-plan.md` — append, never overwrite. Multiple invocations at the same gate stack.
+2. Re-present the original gate prompt. The developer decides what to do with the critique on their own.
+
+The critic never returns a "blocked" status and never makes the choice. If the developer rebuts a concern, append their text as a `### Developer response` under the most recent `## CRITIC_REVIEW` block — that record is visible to `--close`.
+
+---
+
 ## Rules that apply throughout
 
 - The read-only/write boundary is structural, not advisory: never invoke `implementation` (the only write-capable agent) before GATE 2 has passed. Every other agent is read-only by grant.
 - The orchestrator owns every write to `.socratic/`. Read-only subagents return markdown; you persist it.
 - Never skip the sufficiency gate, the option gate, or the plan-confirmation gate because the task looks small.
 - Never assume an answer to a question — surface it.
-- Never auto-close the loop — `--close` is always a deliberate developer action, and the critic within it is opt-in.
+- Never auto-close the loop — `--close` is always a deliberate developer action.
+- The critic is on-demand and never blocks: offer it at `--close`, honour it whenever the developer types `critic` at a gate, append its block, and re-present the gate. Never let it make the developer's decision.
 - If the wiki exists, `codebase-context` always reads it before source.
 - Keep all responses factual and direct. No hype, no filler, no unsolicited suggestions outside the current phase.
 
