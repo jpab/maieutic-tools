@@ -81,6 +81,9 @@ questions-pending
 ## Task evaluation
 <!-- to be filled -->
 
+## Codebase context
+<!-- to be filled -->
+
 ## Selected option
 <!-- to be filled -->
 
@@ -121,7 +124,7 @@ This gate prevents the loop from silently planning against thin input. It is lig
 
 Once the task is sufficient, invoke the `codebase-context` subagent with the ticket, the answered questions, and the session file path. It is read-only. It reads the wiki (if `wiki/` exists, starting with `wiki/README.md`, `wiki/architecture.md`, `wiki/glossary.md`, and relevant `wiki/decisions/`) before the source, then the relevant source files, configuration, and documentation.
 
-It returns a structured technical summary: relevant existing code, established patterns, real constraints, answers to the engineering questions, and any short list of genuinely open technical questions. Keep its output in context for ideation. Set `## Status` to `option-pending` once context gathering is done.
+It returns a structured technical summary: relevant existing code, established patterns, real constraints, answers to the engineering questions, and any short list of genuinely open technical questions. **Persist this summary to the session file under `## Codebase context`** — ideation needs it now, and the orchestrator needs it again at Gate 1 (to expand the plan) and to supply the critic at Gates 1 and 2, which may happen in a later session via `--resume`. Set `## Status` to `option-pending` once context gathering is done.
 
 ### Step 5 — Options-comparison (`ideation`)
 
@@ -172,7 +175,7 @@ The developer picks an option by number, types `critic`, or pushes back with mod
 - If they modify an option, acknowledge what changed and confirm the modified option back to them in one sentence.
 - Record the chosen option (and any modification) in the session file under `## Selected option`.
 
-Then **write the full plan**. Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch (grounded in `codebase-context`), what it deliberately leaves out, and any decision the developer should know is being made. Append it to the plan file:
+Then **write the full plan**. Read `## Codebase context` from the session file to ground it (re-run `codebase-context` and persist it only if that section is empty). Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch, what it deliberately leaves out, and any decision the developer should know is being made. Append it to the plan file:
 
 ```markdown
 ## Selected plan
@@ -195,7 +198,7 @@ The developer confirms the full plan, types `critic`, or pushes back with modifi
 
 ### Step 6 — Implementation (`implementation`)
 
-Only now invoke the `implementation` subagent — the **only** write-capable agent in the loop. Pass it the ticket, the answered questions, the confirmed `## Selected plan`, any developer annotations, and the `codebase-context` output.
+Only now invoke the `implementation` subagent — the **only** write-capable agent in the loop. Pass it the ticket, the answered questions, the confirmed `## Selected plan`, any developer annotations, and the `## Codebase context` summary from the session file (which persists across `--resume` sessions).
 
 It executes the approved plan and does not deviate without surfacing the deviation and asking for guidance. As it implements, it records decisions made that were not in the plan (unavoidable choices, discovered constraints) under `## Implementation notes` in the session file.
 
@@ -259,7 +262,7 @@ The `critic` is an on-demand, read-only adversarial reviewer available at all th
 When triggered, spawn the `critic` subagent with:
 - The `review_target` for that gate.
 - The session file path and the plan file path.
-- The relevant `codebase-context` summary inline (for `option-choice` and `plan`), or the base ref/branch (for `diff`).
+- For `option-choice` and `plan`: the `## Codebase context` summary from the session file (read it from disk — do not rely on it still being in your context, since the gate may be reached in a later `--resume` session). If that section is empty (a session started before it was persisted), re-run `codebase-context` first and persist it. For `diff`: the base ref/branch.
 - **Already-flagged concerns (headlines only)** — if the developer has already run the critic at this same gate, pass the headlines of those prior `## CRITIC_REVIEW` blocks so it does not repeat them. Pass headlines only, never the full prior critique.
 
 When it returns:
