@@ -18,17 +18,19 @@ Invoke with a ticket description — a product-level summary of what needs to be
 /socratic-dev "Add rate limiting to the public API endpoints"
 ```
 
-You'll be asked to give the session a name. This becomes the slug for all session files.
+Before questions start, socratic-dev runs a quick environment check: current branch, uncommitted changes, and whether your branch is behind the remote. If anything looks wrong it warns you before any analysis begins — starting a session on the wrong branch or with stale code would make the codebase picture unreliable.
+
+You'll then be asked to give the session a name. This becomes the slug for all session files.
 
 ### Questions phase
 
 Before any context gathering begins, socratic-dev surfaces two sets of questions in a single prompt:
 
-**Product questions** — gaps in the ticket that would block planning. What counts as the limit? Per user, per IP, per API key? What's the expected behaviour when the limit is hit?
+**Product questions** — for the Product or Business owner. These are about customer/user impact, business goals, and strategic scope: the "what" and "why" of the feature, not the "how". A product question can be answered by a product manager with no technical knowledge. Examples: "What should happen to a user who hits the limit — blocked, degraded, or notified?" / "What business goal does this serve — cost control, abuse prevention, fair use?"
 
-**Engineering questions** — technical constraints and tradeoffs the plans need to account for. Is there an existing middleware layer? Are there services that should be exempt?
+**Engineering questions** — for the developer. Technical unknowns that would force an assumption during planning, and that can't be answered by reading the code. Examples: "Is there an existing middleware layer the limit should slot into?" / "Are there internal services that should be exempt?"
 
-Most of the time you already know the answers — you started the ticket, after all. Answer them in the session and the loop continues. If a product question needs input from someone else, use `--resume` to come back once you have the answer.
+If a product question needs input from someone else, use `--resume` to come back once you have the answer.
 
 ```bash
 /socratic-dev --resume add-rate-limiting

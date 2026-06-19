@@ -52,6 +52,24 @@ These gates and the read-only/write boundary are unconditional. Do not collapse 
 
 ## Starting a new session
 
+### Step 0 — Environment pre-flight
+
+Before anything else, run:
+
+```bash
+git status -sb
+```
+
+Check for three conditions and report findings to the developer:
+
+1. **Branch** — if on `main` or `master`, warn explicitly: "You are on the main branch. Starting a session here will implement directly on main. Confirm, or switch to a feature branch first."
+2. **Uncommitted changes** — if the working tree has modifications or staged changes, warn: "There are uncommitted local changes. These will be visible to codebase-context and may skew the analysis. Stash, commit, or confirm you want to proceed."
+3. **Behind remote** — if git reports the branch is behind its upstream (e.g. `## main...origin/main [behind 3]`), warn: "Your branch is behind the remote. codebase-context will read stale code. Pull first, or confirm you want to proceed."
+
+If all three are clean, say so in one line and continue. If any condition is present, stop and wait for the developer to confirm or resolve before proceeding. Do not proceed on an unacknowledged warning.
+
+---
+
 ### Step 1 — Name the session
 
 Ask the developer for a short slug name for this session (e.g. `add-rate-limiting`). All session files will use this name. Do not proceed until you have it.
@@ -101,9 +119,9 @@ questions-pending
 
 Invoke the `task-context` subagent with the ticket description. It is read-only and returns two labelled sets of questions:
 
-**Product questions** — gaps in the ticket that would prevent good planning. Goals, acceptance criteria, user-facing behaviour, business constraints. Examples: "What is the rate limit — requests per minute, per hour?" / "What should happen when a user hits the limit — 429 with retry-after, or silent queue?"
+**Product questions** — for the Product or Business owner, not the developer. They are about customer/user impact, business goals, and strategic scope — the "what" and "why", not the "how". A product question can be answered by a product manager with no technical knowledge. Examples: "What should happen to a user who hits the limit — are they blocked, degraded, or notified?" / "Is self-service limit increase in scope, or is that a future request?" / "What business goal does the rate limit serve — cost control, abuse prevention, fair use?"
 
-**Engineering questions** — technical unknowns that would force an assumption during planning. Existing patterns, technical constraints. Examples: "Is there an existing middleware chain the limit should slot into?" / "Are there internal services that should be exempt?"
+**Engineering questions** — for the developer. Technical unknowns that codebase-context cannot answer by reading the code alone. Examples: "Is there an existing middleware chain the limit should slot into?" / "Are there internal services that should be exempt from the limit?"
 
 Present both sets to the developer in a single response. Record them in the session file under `## Product questions` and `## Engineering questions` — **you** write the file; the subagent does not.
 
