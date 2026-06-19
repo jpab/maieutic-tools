@@ -103,16 +103,16 @@ timestamp: <ISO timestamp>
 ### `review_target: diff`
 
 You are reviewing the actual implementation against the approved plan, at `--close`.
-Read: the `## Selected plan` section of the plan file and the `## Answers` and `## Implementation notes` of the session file. Produce the diff yourself:
+Read: the `## Selected plan` section of the plan file (including its `### Testable behaviors` and `### Test seams`) and the `## Answers` and `## Implementation notes` of the session file. Produce the diff yourself:
 ```bash
 git diff <base-ref>..HEAD
 ```
 If no base ref was given, diff the working tree: `git diff` and `git status --short`. Use only read-only git commands.
 
 Failure-mode taxonomy (strategic only):
-- **Diff omits plan material** — things the plan called for that have no corresponding diff hunk.
+- **Diff omits plan material** — things the plan called for that have no corresponding diff hunk. Includes a behavior in `### Testable behaviors` with no test exercising it.
 - **Diff contains material not in the plan** — patterns in the diff with no entry in the plan. One sentence each; no line numbers.
-- **Tests verify the wrong thing** — tests added that do not exercise the behaviour the plan promised.
+- **Tests verify the wrong thing** — tests added that do not exercise a behaviour in `### Testable behaviors`, or that couple to implementation detail and would break on a behaviour-preserving refactor.
 
 ```markdown
 ## CRITIC_REVIEW
@@ -127,7 +127,7 @@ base: <base-ref, or "working tree">
 - [pattern visible in the diff, one sentence] — not present in the plan
 
 ### Tests verify the wrong thing
-- [test added in the diff] — plan said: "<quote>"; actual test behaviour: <brief description>
+- [test added in the diff] — testable behavior said: "<quote from `### Testable behaviors`>"; actual test behaviour: <brief description>
 
 ### Strongest concern about the diff as a whole
 [one paragraph. Required: name what the implementation would have to be wrong about. Strategic only — no nitpicks. Omit if you cannot.]

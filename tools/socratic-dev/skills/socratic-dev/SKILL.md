@@ -27,26 +27,27 @@ This skill is orchestrated by you, the main session. You delegate the heavy phas
 
 The loop has one structural guarantee: **no write-capable agent runs before the developer has approved the full plan.** This is not a prose promise the implementation agent makes to itself — it is enforced by tool grants.
 
-- `task-context`, `task-evaluator`, `codebase-context`, and `ideation` are **read-only by grant** (`tools: [Read, Grep, Glob]`). They cannot edit code. They return structured markdown; **you** persist it to the session and plan files.
+- `task-context`, `task-evaluator`, `codebase-context`, `grill`, and `ideation` are **read-only by grant** (`tools: [Read, Grep, Glob]`). They cannot edit code. They return structured markdown; **you** persist it to the session and plan files.
 - `implementation` is the **only** write-capable agent. You do not invoke it until both approval gates below have passed.
 - `critic` is **read-only** and **on-demand**. At any of the three gates the developer may ask for it before deciding — see "Invoking the critic" below.
 
 The flow, with both gates explicit:
 
 ```
-task-context (questions)
-  → [developer answers]
-  → task-evaluator (sufficiency gate — halts on thin input)
-  → codebase-context
+task-context (product questions to the developer; engineering unknowns → investigation targets)
+  → [developer answers the product questions]
+  → task-evaluator (product-level sufficiency gate — halts on thin input, before any code is read)
+  → codebase-context (resolves the investigation targets; returns the open engineering residue)
+  → grill (returns the next question, informed by every answer so far) → orchestrator asks it → re-invoke grill → … until grill stops
   → ideation (named options-comparison + recommendation)
   → [GATE 1: developer approves an option]        ← critic available (option-choice)
-  → orchestrator writes the full plan
+  → orchestrator writes the full plan (incl. testable behaviors + test seams)
   → [GATE 2: developer confirms the full plan]     ← critic available (plan)
-  → implementation (the only write-capable agent)
+  → implementation (the only write-capable agent — implements test-first, behavior by behavior)
   → [--close: optional critic on the diff]         ← critic available (diff)
 ```
 
-These gates and the read-only/write boundary are unconditional. Do not collapse them, and do not invoke `implementation` early because the task looks small. The critic never blocks — it produces a record the developer reads and decides on.
+Two ordering rules make this work: **engineering questions are never put to the developer before the code is read** — task-context turns them into investigation targets, codebase-context resolves what it can, and only the residue is grilled — and **product questions stay up front** so they can be answered async and so the sufficiency gate can halt thin input before a codebase pass is spent. These gates and the read-only/write boundary are unconditional. Do not collapse them, and do not invoke `implementation` early because the task looks small. The critic never blocks — it produces a record the developer reads and decides on.
 
 ---
 
@@ -90,17 +91,20 @@ questions-pending
 ## Product questions
 <!-- to be filled -->
 
-## Engineering questions
-<!-- to be filled -->
+## Engineering investigation targets
+<!-- to be filled — handed to codebase-context, not asked to the developer here -->
 
 ## Answers
-<!-- to be filled -->
+<!-- product answers, then grilled engineering answers, labelled -->
 
 ## Task evaluation
 <!-- to be filled -->
 
 ## Codebase context
 <!-- to be filled -->
+
+## Open engineering questions
+<!-- the residue codebase-context could not resolve; grill works it down one question at a time, adapting to each answer -->
 
 ## Selected option
 <!-- to be filled -->
@@ -113,25 +117,25 @@ questions-pending
 ```
 
 **Status values** the session moves through:
-`questions-pending` → `clarification-pending` (only if the evaluator halts) → `option-pending` → `plan-pending` → `implementation-pending` → `done-pending-close` → `closed`.
+`questions-pending` → `clarification-pending` (only if the evaluator halts) → `grilling-pending` → `option-pending` → `plan-pending` → `implementation-pending` → `done-pending-close` → `closed`.
 
 ### Step 2 — Questions phase (`task-context`)
 
-Invoke the `task-context` subagent with the ticket description. It is read-only and returns two labelled sets of questions:
+Invoke the `task-context` subagent with the ticket description. It is read-only and returns two labelled sets — and the distinction in *who they are for and when they are asked* is structural:
 
-**Product questions** — for the Product or Business owner, not the developer. They are about customer/user impact, business goals, and strategic scope — the "what" and "why", not the "how". A product question can be answered by a product manager with no technical knowledge. Examples: "What should happen to a user who hits the limit — are they blocked, degraded, or notified?" / "Is self-service limit increase in scope, or is that a future request?" / "What business goal does the rate limit serve — cost control, abuse prevention, fair use?"
+**Product questions** — for the Product or Business owner, not the developer. They are about customer/user impact, business goals, and strategic scope — the "what" and "why", not the "how". A product question can be answered by a product manager with no technical knowledge. Examples: "What should happen to a user who hits the limit — are they blocked, degraded, or notified?" / "Is self-service limit increase in scope, or is that a future request?" These you ask **now**, because they do not depend on the code and may need an answer from someone who is not present.
 
-**Engineering questions** — for the developer. Technical unknowns that codebase-context cannot answer by reading the code alone. Examples: "Is there an existing middleware chain the limit should slot into?" / "Are there internal services that should be exempt from the limit?"
+**Engineering investigation targets** — technical unknowns (existing middleware chain, exemption rules, integration points). These you do **not** ask anyone yet. They are handed to `codebase-context`, which resolves most of them by reading the code. Only the residue it cannot close gets put to the developer later, in the grilling phase (Step 5). This is what stops the developer being asked engineering questions the codebase would have answered for free.
 
-Present both sets to the developer in a single response. Record them in the session file under `## Product questions` and `## Engineering questions` — **you** write the file; the subagent does not.
+Present the **product questions** to the developer. Record them under `## Product questions` and the investigation targets under `## Engineering investigation targets` — **you** write the file; the subagent does not.
 
-After the developer answers, record the answers under `## Answers`. Proceed to Step 3.
+After the developer answers the product questions, record the answers under `## Answers` (label them as product answers). Proceed to Step 3.
 
 If the developer cannot answer a product question yet, stop here. Leave `## Status` at `questions-pending` and tell them to call `--resume <session-name>` when ready. Do not proceed on incomplete information.
 
 ### Step 3 — Sufficiency gate (`task-evaluator`)
 
-Before reading any code, invoke the `task-evaluator` subagent with the ticket description and the answered questions. It is read-only and does not analyse the codebase — it only judges whether the inputs are specific enough to plan against.
+Before reading any code, invoke the `task-evaluator` subagent with the ticket description, the answered product questions, and the investigation targets (for context only — these are not yet answered). It is read-only and does not analyse the codebase — it only judges whether the inputs are specific enough to plan against. An unanswered investigation target is not a gap: codebase-context resolves those next.
 
 - If it returns `verdict: sufficient` — record a one-line note under `## Task evaluation` and proceed to Step 4.
 - If it returns `verdict: insufficient` — record the gaps and clarifying questions under `## Task evaluation`, set `## Status` to `clarification-pending`, and present the clarifying questions to the developer. Collect their answers, append them under `## Answers`, then re-run the evaluator. If the developer cannot answer yet, stop and tell them to `--resume` when ready.
@@ -140,13 +144,28 @@ This gate prevents the loop from silently planning against thin input. It is lig
 
 ### Step 4 — Context gathering (`codebase-context`)
 
-Once the task is sufficient, invoke the `codebase-context` subagent with the ticket, the answered questions, and the session file path. It is read-only. It reads the wiki (if `wiki/` exists, starting with `wiki/README.md`, `wiki/architecture.md`, `wiki/glossary.md`, and relevant `wiki/decisions/`) before the source, then the relevant source files, configuration, and documentation.
+Once the task is sufficient, invoke the `codebase-context` subagent with the ticket, the answered product questions, the `## Engineering investigation targets`, and the session file path. It is read-only. It reads the wiki (if `wiki/` exists, starting with `wiki/README.md`, `wiki/architecture.md`, `wiki/glossary.md`, and relevant `wiki/decisions/`) before the source, then the relevant source files, configuration, tests, and documentation.
 
-It returns a structured technical summary: relevant existing code, established patterns, real constraints, answers to the engineering questions, and any short list of genuinely open technical questions. **Persist this summary to the session file under `## Codebase context`** — ideation needs it now, and the orchestrator needs it again at Gate 1 (to expand the plan) and to supply the critic at Gates 1 and 2, which may happen in a later session via `--resume`. Set `## Status` to `option-pending` once context gathering is done.
+It returns a structured technical summary: relevant existing code, established patterns, real constraints, the **test seams** the area already has, the resolved investigation targets, and a short list of **open engineering questions** — the residue it could not resolve from the code (listed plainly, with any lean the code suggests; the `grill` agent sharpens these into the script next). **Persist this summary to the session file under `## Codebase context`, and the residue under `## Open engineering questions`** — the grill phase needs the residue now, ideation needs the summary next, and the orchestrator needs it again at Gate 1 (to expand the plan) and to supply the critic at Gates 1 and 2, which may happen in a later session via `--resume`. Set `## Status` to `grilling-pending` once context gathering is done.
 
-### Step 5 — Options-comparison (`ideation`)
+### Step 5 — Grilling (adaptive: `grill` thinks, orchestrator asks)
 
-Invoke the `ideation` subagent with the ticket, the answered questions, the `task-context` output, and the `codebase-context` output. It is read-only and returns a named options-comparison — 2-3 meaningfully different approaches, each a paragraph (tradeoffs and assumptions explicit), plus a recommendation that names what would flip the choice.
+Now — and only now, after the code has been read — put the open engineering questions to the developer. The work splits in two: the `grill` subagent decides *what to ask next*, and **you** do the asking. This is deliberate — a subagent cannot hold an interactive dialogue (it returns once and cannot wait for the developer), so the asking must be yours; but the question-design is offloaded so you stay a thin relay, not a question-designer.
+
+It is an **adaptive loop**, not a fixed script. Each question is chosen in light of every answer already given, so each one stands on the ones before it:
+
+1. **Ask grill for the next question.** Invoke the `grill` subagent with the ticket, the answered product questions, the `## Open engineering questions` residue, the `codebase-context` summary, and **every engineering answer collected so far in this phase** (none, on the first invocation). It is read-only and returns a `## GRILL_NEXT` block — either one question (with a recommended answer and a reason) or a `stop:` signal.
+2. **If it returns `stop:`** — grilling is done. Set `## Status` to `option-pending` and proceed to Step 6.
+3. **If it returns a question** — ask the developer that one question and its recommended answer. The developer confirms the recommendation, gives their own answer, or pushes back. Record the answer under `## Answers`, labelled as an engineering answer.
+4. **Loop.** Re-invoke `grill`, now including the answer you just recorded, to get the next question. Repeat from step 2.
+
+Do not ask more than one question per turn — asking several at once is bewildering and defeats the point. Do not invent or reorder questions yourself; that judgement is grill's. Trust the `stop:` signal — do not keep prompting grill for "one more"; if it stops, grilling is over.
+
+If the developer cannot answer the current question yet, leave `## Status` at `grilling-pending`, record what has been answered, and tell them to `--resume`. On resume you simply re-invoke `grill` with the answers gathered so far and continue the loop. Do not guess past an unanswered question that shapes the plan.
+
+### Step 6 — Options-comparison (`ideation`)
+
+Invoke the `ideation` subagent with the ticket, the answered product questions, the grilled engineering answers, the `task-context` output, and the `codebase-context` output. It is read-only and returns a named options-comparison — 2-3 meaningfully different approaches, each a paragraph (tradeoffs, assumptions, and **how the option would be tested and through how many seams** explicit), plus a recommendation that names what would flip the choice.
 
 **You** write the returned output to `.socratic/<session-name>-plan.md`:
 
@@ -178,8 +197,9 @@ Stop here. Wait for `--resume`. **GATE 1 is the developer choosing an option** �
 
 Read `.socratic/<session-name>.md` to determine the current status and act on it:
 
-- `questions-pending` — re-display the unanswered questions (re-invoke `task-context` if needed). Collect answers, record them, then proceed to Step 3 (sufficiency gate).
+- `questions-pending` — re-display the unanswered product questions (re-invoke `task-context` if needed). Collect answers, record them, then proceed to Step 3 (sufficiency gate).
 - `clarification-pending` — re-display the evaluator's clarifying questions. Collect answers, append under `## Answers`, then re-run `task-evaluator` from Step 3.
+- `grilling-pending` — resume the adaptive grilling loop from Step 5: re-invoke `grill` with the `## Open engineering questions` residue and the engineering answers already recorded under `## Answers`; it returns the next question (or `stop:`). Continue until it stops, then set `## Status` to `option-pending` and proceed to Step 6 (ideation).
 - `option-pending` — **GATE 1.** Re-display the options-comparison from the plan file and ask which option the developer chooses. See "Option approval" below.
 - `plan-pending` — **GATE 2.** Re-display the full plan from the plan file and ask for final confirmation to implement. See "Plan confirmation" below.
 
@@ -193,11 +213,18 @@ The developer picks an option by number, types `critic`, or pushes back with mod
 - If they modify an option, acknowledge what changed and confirm the modified option back to them in one sentence.
 - Record the chosen option (and any modification) in the session file under `## Selected option`.
 
-Then **write the full plan**. Read `## Codebase context` from the session file to ground it (re-run `codebase-context` and persist it only if that section is empty). Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch, what it deliberately leaves out, and any decision the developer should know is being made. Append it to the plan file:
+Then **write the full plan**. Read `## Codebase context` from the session file to ground it (re-run `codebase-context` and persist it only if that section is empty). Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch, what it deliberately leaves out, and any decision the developer should know is being made. Then add two structured tails the implementation agent depends on: the **testable behaviors** (the critical-path behaviors the implementer will drive out test-first, each phrased at the public-interface level, not as implementation detail) and the **test seams** (where these will be tested, reusing the seams codebase-context found, minimising new ones — the ideal is one). Append it to the plan file:
 
 ```markdown
 ## Selected plan
 <full plan prose for the chosen option>
+
+### Testable behaviors
+- <behavior the implementer will drive out test-first, stated through the public interface>
+- ...
+
+### Test seams
+<where these behaviors are exercised; which existing seams are reused; how many new seams, if any, and why>
 ```
 
 You are the orchestrator writing a planning file — this is not a code write and does not breach the write-capable-agent boundary. Do not invoke the `implementation` agent here.
@@ -214,11 +241,11 @@ The developer confirms the full plan, types `critic`, or pushes back with modifi
 - If they modify it, acknowledge what changed, rewrite the `## Selected plan` section, confirm it back in one paragraph, and ask for explicit confirmation again. Do not proceed on an unconfirmed plan.
 - Once confirmed, record the confirmation under `## Plan confirmed` in the session file and set `## Status` to `implementation-pending`.
 
-### Step 6 — Implementation (`implementation`)
+### Step 7 — Implementation (`implementation`)
 
-Only now invoke the `implementation` subagent — the **only** write-capable agent in the loop. Pass it the ticket, the answered questions, the confirmed `## Selected plan`, any developer annotations, and the `## Codebase context` summary from the session file (which persists across `--resume` sessions).
+Only now invoke the `implementation` subagent — the **only** write-capable agent in the loop. Pass it the ticket, the answered product and grilled engineering questions, the confirmed `## Selected plan` (including its `### Testable behaviors` and `### Test seams`), any developer annotations, and the `## Codebase context` summary from the session file (which persists across `--resume` sessions).
 
-It executes the approved plan and does not deviate without surfacing the deviation and asking for guidance. As it implements, it records decisions made that were not in the plan (unavoidable choices, discovered constraints) under `## Implementation notes` in the session file.
+It executes the approved plan **test-first** — implementing the testable behaviors one at a time, red → green → refactor, with tests bound to the public interface — and does not deviate without surfacing the deviation and asking for guidance. As it implements, it records decisions made that were not in the plan (unavoidable choices, discovered constraints) under `## Implementation notes` in the session file.
 
 When implementation is complete, set `## Status` to `done-pending-close`. Tell the developer to call `--close <session-name>` to complete the loop.
 
@@ -228,7 +255,7 @@ When implementation is complete, set `## Status` to `done-pending-close`. Tell t
 
 Read `.socratic/<session-name>.md`. Confirm status is `done-pending-close`.
 
-### Step 7a — Optional critic
+### Step 8a — Optional critic
 
 Ask the developer whether they want an adversarial review of what was built against the approved plan:
 
@@ -239,9 +266,9 @@ plan and flags divergences and unresolved questions. (y / n)
 
 If yes, invoke the critic with `review_target: diff` (see "Invoking the critic"). Pass the base ref/branch to diff against, or an instruction to diff the working tree. Append the returned `## CRITIC_REVIEW` block to the plan file. This close-time review is the session's record of plan-vs-implementation drift.
 
-If no, skip to Step 7b.
+If no, skip to Step 8b.
 
-### Step 7b — Handoff
+### Step 8b — Handoff
 
 Generate a structured handoff — a short markdown summary:
 
@@ -275,7 +302,7 @@ The `critic` is an on-demand, read-only adversarial reviewer available at all th
 |---|---|---|---|
 | Option choice | GATE 1, status `option-pending` | `option-choice` | the `## Options` + `## Recommendation` |
 | Plan | GATE 2, status `plan-pending` | `plan` | the `## Selected plan` for the chosen option |
-| Diff | `--close`, Step 7a | `diff` | the implementation diff vs the approved plan |
+| Diff | `--close`, Step 8a | `diff` | the implementation diff vs the approved plan |
 
 When triggered, spawn the `critic` subagent with:
 - The `review_target` for that gate.
@@ -296,6 +323,9 @@ The critic never returns a "blocked" status and never makes the choice. If the d
 - The read-only/write boundary is structural, not advisory: never invoke `implementation` (the only write-capable agent) before GATE 2 has passed. Every other agent is read-only by grant.
 - The orchestrator owns every write to `.socratic/`. Read-only subagents return markdown; you persist it.
 - Never skip the sufficiency gate, the option gate, or the plan-confirmation gate because the task looks small.
+- Never put an engineering question to the developer before `codebase-context` has read the code. Engineering unknowns are investigation targets first; only the residue is grilled. Product questions are the exception — they go up front.
+- Grilling is an adaptive loop: `grill` returns one question at a time, each chosen in light of every prior answer; you ask it and feed the answer back. Never dump the residue as a batch, never invent or reorder questions yourself, and trust grill's `stop:` signal rather than prompting it for more.
+- The plan must carry `### Testable behaviors` and `### Test seams`; `implementation` builds them out test-first, behavior by behavior. Do not hand the implementer a plan with no testable behaviors.
 - Never assume an answer to a question — surface it.
 - Never auto-close the loop — `--close` is always a deliberate developer action.
 - The critic is on-demand and never blocks: offer it at `--close`, honour it whenever the developer types `critic` at a gate, append its block, and re-present the gate. Never let it make the developer's decision.

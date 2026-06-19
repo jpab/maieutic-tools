@@ -17,6 +17,7 @@ AGENTS=(
   "tools/socratic-dev/agents/task-context.md"
   "tools/socratic-dev/agents/task-evaluator.md"
   "tools/socratic-dev/agents/codebase-context.md"
+  "tools/socratic-dev/agents/grill.md"
   "tools/socratic-dev/agents/ideation.md"
   "tools/socratic-dev/agents/implementation.md"
   "tools/socratic-dev/agents/critic.md"
