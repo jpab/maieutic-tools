@@ -57,10 +57,18 @@ npx skills@latest add jpab/maieutic-tools/tools/dialectic-synthesis
 The skills above work on any agentskills.io-compatible tool. If you use Claude Code, run a second step to install the subagent definitions that activate the full multi-agent layer:
 
 ```bash
+# all tools
 curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh
+
+# a single tool (pass its name after `-s --`), to match a per-tool skill install
+curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- socratic-dev
+curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- dialectic-synthesis
+
+# several tools at once
+curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- socratic-dev dialectic-synthesis
 ```
 
-This copies the agent files to `~/.claude/agents/`. Without this step, each tool falls back to solo mode — one agent following the methodology in sequence rather than parallel specialists. See [docs/cross-platform.md](docs/cross-platform.md) for what the difference means in practice.
+With no arguments it installs every tool's agents; named tools install only those. Valid names are `socratic-dev`, `anamnesis-wiki`, and `dialectic-synthesis`. Either way it copies the agent files to `~/.claude/agents/`. Without this step, each tool falls back to solo mode — one agent following the methodology in sequence rather than parallel specialists. See [docs/cross-platform.md](docs/cross-platform.md) for what the difference means in practice.
 
 ---
 
