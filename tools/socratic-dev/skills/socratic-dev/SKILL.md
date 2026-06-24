@@ -185,6 +185,9 @@ Invoke the `ideation` subagent with the ticket, the answered product questions, 
 
 ## Recommendation
 Option <N> — <why, and what would flip it>
+
+## Deferred to the plan
+<within-approach open questions ideation kept out of the options — folded into the full plan at Gate 1→2 so the developer settles them at Gate 2; or "none">
 ```
 
 Tell the developer this file has been written and can be committed or shared. Leave `## Status` at `option-pending`.
@@ -213,7 +216,7 @@ The developer picks an option by number, types `critic`, or pushes back with mod
 - If they modify an option, acknowledge what changed and confirm the modified option back to them in one sentence.
 - Record the chosen option (and any modification) in the session file under `## Selected option`.
 
-Then **write the full plan**. Read `## Codebase context` from the session file to ground it (re-run `codebase-context` and persist it only if that section is empty). Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch, what it deliberately leaves out, and any decision the developer should know is being made. Then add two structured tails the implementation agent depends on: the **testable behaviors** (the critical-path behaviors the implementer will drive out test-first, each phrased at the public-interface level, not as implementation detail) and the **test seams** (where these will be tested, reusing the seams codebase-context found, minimising new ones — the ideal is one). Append it to the plan file:
+Then **write the full plan**. Read `## Codebase context` from the session file to ground it (re-run `codebase-context` and persist it only if that section is empty). Expand the chosen option into a concrete implementation plan — still prose, not a checklist — covering the approach, the files and patterns it will touch, what it deliberately leaves out, and any decision the developer should know is being made — including the within-approach items ideation listed under `## Deferred to the plan`, each folded in as a low-altitude decision the developer settles here at Gate 2 (these were deliberately kept out of the Gate 1 option choice, so this is where they land). Then add two structured tails the implementation agent depends on: the **testable behaviors** (the critical-path behaviors the implementer will drive out test-first, each phrased at the public-interface level, not as implementation detail) and the **test seams** (where these will be tested, reusing the seams codebase-context found, minimising new ones — the ideal is one). Append it to the plan file:
 
 ```markdown
 ## Selected plan
