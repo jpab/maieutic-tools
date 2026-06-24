@@ -87,6 +87,8 @@ Optional structured output: include a **scoring matrix** against the goals only 
 - One artifact is a superset of the other → state it; the synthesis will be trivially short.
 - The two solve different problems and aren't comparable against the goals → state it and recommend re-scoping the comparison. Do not force a synthesis.
 
+Before moving to the verdict, offer the developer an adversarial review of the tension map (`review_target: tension-map`) — see [Invoking the critic](#invoking-the-critic). It is optional and never blocks.
+
 ## Phase 3 — Synthesis plan
 
 **Orchestrated:** delegate to `synthesis-planner`, passing the goal anchor and the tension map.
@@ -146,7 +148,27 @@ Use this exact skeleton:
 <Test the synthesis plan against each goal from Phase 0. State plainly whether the plan satisfies it. This section is mandatory.>
 ```
 
-Tell the developer the document has been written and where. Do not act on it — the developer decides what to do next.
+Tell the developer the document has been written and where. Offer an adversarial review of the synthesis plan (`review_target: synthesis-plan`) — see [Invoking the critic](#invoking-the-critic). Do not act on it — the developer decides what to do next.
+
+---
+
+## Invoking the critic
+
+dialectic-synthesis has its own adversarial critic, `synthesis-critic` — an on-demand, read-only reviewer that falsifies the analysis against the goals it claims to serve. It is offered at two gates: the tension map (end of Phase 2, `review_target: tension-map`) and the synthesis plan (after Phase 3, `review_target: synthesis-plan`). The developer triggers it; you never run it unprompted, and it never blocks.
+
+**Orchestrated mode** (the agent is installed — check `.claude/agents/synthesis-critic.md`): spawn the `synthesis-critic` subagent with the `review_target` and the path to the synthesis document. If the developer already ran it at this same gate, also pass the **headlines** of the prior `## CRITIC_REVIEW` blocks (headlines only, so it does not anchor). Append the returned block to the synthesis document — never overwrite; invocations stack. Then let the developer decide.
+
+**Solo mode** (no agent): you perform the adversarial pass yourself, in a deliberately skeptical voice. This is a falsification attempt, not a review — the default "this looks sound, two small notes" *is* the failure mode. Hold these hard rules:
+
+- Every concern grounded in a **verbatim quote** from the synthesis document. If you cannot quote it, the concern does not exist.
+- **No** "strengths", "overall", "summary", or "recommendation" sections — falsification only.
+- **No severity ratings** — severity invites averaging; present every concern at equal weight.
+- Hunt the gate's failure modes: at the tension map — manufactured tension, missed conflict, false short-circuit; at the synthesis plan — lazy winner, forced hybrid, goal-check theater, untraceable recommendation.
+- Name the **strongest alternative** and what the analysis would have to be wrong about for it to win; omit if you cannot name it.
+- No nitpicks — strategic only.
+- If you find no falsification, say so plainly. Do not invent weak concerns.
+
+Append your findings under a `## CRITIC_REVIEW` heading in the synthesis document, then let the developer decide.
 
 ---
 

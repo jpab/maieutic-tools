@@ -26,6 +26,7 @@ AGENTS=(
   "tools/dialectic-synthesis/agents/artifact-reader.md"
   "tools/dialectic-synthesis/agents/tension-mapper.md"
   "tools/dialectic-synthesis/agents/synthesis-planner.md"
+  "tools/dialectic-synthesis/agents/synthesis-critic.md"
 )
 
 echo "Installing maieutic-tools agents to ${AGENTS_DIR}/"
