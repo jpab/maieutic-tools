@@ -2,6 +2,8 @@
 
 A guided agentic development loop that keeps you in control of every significant decision.
 
+![socratic-dev demo](../../docs/socratic-dev-demo-gif-small.gif)
+
 You bring a ticket. socratic-dev brings product questions, a sufficiency check, codebase context, a grilling on what the code can't answer, and options — in that order. Nothing gets implemented until you've chosen an option and confirmed the full plan. The plan is a file you can commit, share with your team, and discuss before a line of code is written. When you're ready, you resume. When implementation is done, you close — optionally with an adversarial critic that checks what was built against what was approved.
 
 The loop's central guarantee: **no write-capable agent runs before you've approved the plan.** This isn't a promise the implementation agent makes to itself — every agent except the implementer is read-only *by tool grant*. The gate is structural.
