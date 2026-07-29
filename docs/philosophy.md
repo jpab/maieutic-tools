@@ -36,6 +36,8 @@ Each tool in this collection carries two names fused together: a Greek or philos
 
 **Dialectic-synthesis.** Dialectic — the Hegelian method of holding two positions in tension and finding what survives the friction. When you have two artifacts that both have merit, the question is not which one wins but what each one knows that the other doesn't.
 
+**Antilogy-verdict.** Antilogy — the Protagorean practice of constructing two opposed arguments on the same matter, on the premise that a position you have not argued against is a position you do not yet hold deliberately. Where dialectic starts from two positions that exist, antilogy manufactures the second one on purpose. Verdict — and here the functional half is doing unusual work. The other tools name what they produce: a development loop, a wiki, a synthesis plan. This one produces no artifact at all. What it hands back is a decision, adjudicated and delivered into the conversation, with the losing arguments already discarded. Calling that a document would be a lie about its shelf life; calling it a verdict is the honest description of a thing you read once and act on.
+
 The philosophical name is not decoration. It describes how the tool thinks. The functional suffix describes what it does. Together they are a complete description.
 
 ## The tagline

@@ -10,7 +10,9 @@
 # Usage:
 #   install-agents.sh                                    # all tools (default)
 #   install-agents.sh socratic-dev                       # one tool
-#   install-agents.sh socratic-dev dialectic-synthesis   # several tools
+#   install-agents.sh socratic-dev antilogy-verdict      # several tools
+#
+# Tool names: socratic-dev, anamnesis-wiki, dialectic-synthesis, antilogy-verdict
 #
 # Piped form — pass tool names after `-s --`:
 #   curl -fsSL .../install-agents.sh | sh                              # all
@@ -26,7 +28,7 @@ BRANCH="main"
 BASE_URL="https://raw.githubusercontent.com/${REPO}/${BRANCH}"
 AGENTS_DIR="${HOME}/.claude/agents"
 
-ALL_TOOLS="socratic-dev anamnesis-wiki dialectic-synthesis"
+ALL_TOOLS="socratic-dev anamnesis-wiki dialectic-synthesis antilogy-verdict"
 
 # Echo the agent file paths for a given tool, one per line. Unknown tool → exit 1.
 agents_for_tool() {
@@ -54,6 +56,12 @@ tools/dialectic-synthesis/agents/artifact-reader.md
 tools/dialectic-synthesis/agents/tension-mapper.md
 tools/dialectic-synthesis/agents/synthesis-planner.md
 tools/dialectic-synthesis/agents/synthesis-critic.md
+EOF
+      ;;
+    antilogy-verdict)
+      cat <<'EOF'
+tools/antilogy-verdict/agents/antilogy-advocate.md
+tools/antilogy-verdict/agents/antilogy-adversary.md
 EOF
       ;;
     *)

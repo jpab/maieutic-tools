@@ -38,6 +38,16 @@ The reading is blind — each artifact is understood before the goals enter, so 
 
 Works standalone. Pairs manually with socratic-dev when you can't choose between two proposed plans.
 
+### [antilogy-verdict](tools/antilogy-verdict/)
+
+A stress-test for one proposal, argued from both sides at once. You bring a single thing you're about to commit to — a plan, a decision, a claim, a design, a diff. It builds the strongest honest case FOR and the strongest honest case AGAINST in isolation from each other, adjudicates where they genuinely conflict, and returns a verdict you can read in thirty seconds.
+
+Where dialectic-synthesis compares two artifacts that already exist, antilogy-verdict *generates* the two opposed cases about one proposal. Two things in hand and a merge to plan is dialectic-synthesis; one thing in hand and a decision to make is antilogy-verdict.
+
+It writes no file — alone among these tools. The verdict is conversational output with a shelf life of one decision.
+
+Works standalone. Nothing auto-invokes it.
+
 ---
 
 ## Install
@@ -50,6 +60,7 @@ npx skills@latest add jpab/maieutic-tools -g
 npx skills@latest add jpab/maieutic-tools/tools/socratic-dev
 npx skills@latest add jpab/maieutic-tools/tools/anamnesis-wiki
 npx skills@latest add jpab/maieutic-tools/tools/dialectic-synthesis
+npx skills@latest add jpab/maieutic-tools/tools/antilogy-verdict
 ```
 
 ### Claude Code: multi-agent layer
@@ -63,12 +74,13 @@ curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-ag
 # a single tool (pass its name after `-s --`), to match a per-tool skill install
 curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- socratic-dev
 curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- dialectic-synthesis
+curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- antilogy-verdict
 
 # several tools at once
 curl -fsSL https://raw.githubusercontent.com/jpab/maieutic-tools/main/install-agents.sh | sh -s -- socratic-dev dialectic-synthesis
 ```
 
-With no arguments it installs every tool's agents; named tools install only those. Valid names are `socratic-dev`, `anamnesis-wiki`, and `dialectic-synthesis`. Either way it copies the agent files to `~/.claude/agents/`. Without this step, each tool falls back to solo mode — one agent following the methodology in sequence rather than parallel specialists. See [docs/cross-platform.md](docs/cross-platform.md) for what the difference means in practice.
+With no arguments it installs every tool's agents; named tools install only those. Valid names are `socratic-dev`, `anamnesis-wiki`, `dialectic-synthesis`, and `antilogy-verdict`. Either way it copies the agent files to `~/.claude/agents/`. Without this step, each tool falls back to solo mode — one agent following the methodology in sequence rather than parallel specialists. See [docs/cross-platform.md](docs/cross-platform.md) for what the difference means in practice.
 
 ---
 

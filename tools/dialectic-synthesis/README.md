@@ -79,6 +79,8 @@ The blind-reading firewall is structural here: `artifact-reader` is never handed
 
 dialectic-synthesis works standalone — it compares any two artifacts, not just code.
 
+If you have only *one* thing and want it stress-tested rather than compared, that is [antilogy-verdict](../antilogy-verdict/)'s job: it generates the two opposed cases about a single proposal instead of reading two that already exist, and returns a verdict rather than a synthesis plan.
+
 It also pairs, manually, with [socratic-dev](../socratic-dev/). When socratic-dev proposes two plans and you can't choose between them, feed both to dialectic-synthesis: instead of forcing a winner, it finds the hybrid — which plan is the base, and what's worth carrying from the other. Nothing auto-invokes; you drive the pairing, because the developer makes the call.
 
 ---

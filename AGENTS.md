@@ -21,9 +21,12 @@ maieutic-tools/
 │   │   │       └── SKILL.md         # universal skill, works on 30+ agent tools
 │   │   └── agents/                  # Claude Code native subagents
 │   │       ├── task-context.md      # questions, session state
+│   │       ├── task-evaluator.md    # sufficiency gate before planning
 │   │       ├── codebase-context.md  # reads repo and wiki
+│   │       ├── grill.md             # designs the next grilling question
 │   │       ├── ideation.md          # proposes plans
-│   │       └── implementation.md    # executes approved plan
+│   │       ├── implementation.md    # executes approved plan
+│   │       └── critic.md            # adversarial reviewer at decision gates
 │   │
 │   ├── anamnesis-wiki/
 │   │   ├── README.md
@@ -37,16 +40,26 @@ maieutic-tools/
 │   │   └── agents/
 │   │       └── wiki-writer.md       # handles all three modes on Claude Code
 │   │
-│   └── dialectic-synthesis/
+│   ├── dialectic-synthesis/
+│   │   ├── README.md
+│   │   ├── skills/
+│   │   │   └── dialectic-synthesis/
+│   │   │       └── SKILL.md         # four-phase two-artifact synthesis methodology
+│   │   └── agents/                  # Claude Code native subagents
+│   │       ├── goal-elicitation.md  # asks questions, no file access
+│   │       ├── artifact-reader.md   # reads one artifact, blind to goals (runs 2×, parallel)
+│   │       ├── tension-mapper.md    # maps conflicts/complements against goals
+│   │       ├── synthesis-planner.md # writes the decision document
+│   │       └── synthesis-critic.md  # adversarial reviewer at analysis gates
+│   │
+│   └── antilogy-verdict/
 │       ├── README.md
 │       ├── skills/
-│       │   └── dialectic-synthesis/
-│       │       └── SKILL.md         # four-phase two-artifact synthesis methodology
+│       │   └── antilogy-verdict/
+│       │       └── SKILL.md         # two opposed cases on one target, then a verdict
 │       └── agents/                  # Claude Code native subagents
-│           ├── goal-elicitation.md  # asks questions, no file access
-│           ├── artifact-reader.md   # reads one artifact, blind to goals (runs 2×, parallel)
-│           ├── tension-mapper.md    # maps conflicts/complements against goals
-│           └── synthesis-planner.md # writes the decision document
+│           ├── antilogy-advocate.md # strongest honest case FOR (runs in parallel)
+│           └── antilogy-adversary.md # strongest honest case AGAINST (runs in parallel)
 │
 └── docs/
     ├── philosophy.md
@@ -104,6 +117,21 @@ Key behaviours:
 - Output: `.dialectic/<name>-synthesis.md` (committable, not gitignored — it's the deliverable)
 - Not a lazy winner: verdict is a spectrum from pure-winner to balanced hybrid; usually "base + grafts"
 
+### antilogy-verdict
+
+A stress-test for one proposal. Takes a single target (plan, decision, claim, design, or diff) plus the goal it serves and the constraints it respects, generates two opposed cases about it in isolation, adjudicates the clash privately, and emits only the verdict.
+
+Two subagents, spawned in parallel from one message:
+- `antilogy-advocate` — the strongest honest case FOR; no generic benefits, every point quoted
+- `antilogy-adversary` — the strongest honest case AGAINST; no strengths section, no severity ratings
+
+Key behaviours:
+- The two cases are built independently — neither agent sees the other's output, so neither anchors on it
+- The raw reports are never relayed to the user; only the adjudicated verdict is
+- **Writes no file** — no session state, no decision document. The only tool in the collection with no artifact
+- No state machine, no `--resume`/`--close`; goal and constraints are required, not optional
+- Distinct from dialectic-synthesis by input: that tool compares two artifacts that already exist, this one generates two cases about one proposal
+
 ## Distribution
 
 Tools are distributed via [agentskills.io](https://agentskills.io):
@@ -113,6 +141,7 @@ npx skills add jpab/maieutic-tools
 npx skills add jpab/maieutic-tools/tools/socratic-dev
 npx skills add jpab/maieutic-tools/tools/anamnesis-wiki
 npx skills add jpab/maieutic-tools/tools/dialectic-synthesis
+npx skills add jpab/maieutic-tools/tools/antilogy-verdict
 ```
 
 SKILL.md files work on 30+ agent tools. `.claude/agents/` definitions activate a multi-agent layer on Claude Code — same methodology, parallel specialist execution.

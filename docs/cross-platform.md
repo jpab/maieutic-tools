@@ -35,7 +35,14 @@ The same SKILL.md loads, but Claude Code also picks up the agent definitions in 
 - `tension-mapper` maps both readings against the goals — goals enter context here for the first time
 - `synthesis-planner` produces the decision document
 
-The blind-reading firewall that dialectic-synthesis depends on is enforced structurally on Claude Code: `artifact-reader` literally cannot see the goals because they were never passed to it. On Tier 1, a single agent preserves the same firewall by discipline — writing out each artifact reading in full before re-reading the goals. The methodology is identical; the enforcement mechanism differs.
+The blind-reading firewall that dialectic-synthesis depends on is enforced structurally on Claude Code: `artifact-reader` literally cannot see the goals because they were never passed to it. On Tier 1, a single agent preserves the same firewall by discipline — writing out each artifact reading in full before re-reading the goals. For dialectic-synthesis the methodology is identical; only the enforcement mechanism differs.
+
+**antilogy-verdict on Claude Code:**
+- `antilogy-advocate` and `antilogy-adversary` are spawned in parallel from a single message, each receiving the same self-contained briefing
+- Neither is handed the other's output, so neither anchors on it, pre-concedes to it, or splits the difference with it
+- The main session stays the parent — it adjudicates the two returned cases privately and emits only the verdict
+
+**This is the one tool where the two tiers are not equivalent, and the SKILL.md says so.** Its firewall is *"neither sees the other's output"* — a property of two isolated contexts, not a discipline a single agent can adopt. Tier 1 solo mode writes the case FOR in full, then the case AGAINST, then adjudicates, and that ordering is a real mitigation. But unlike dialectic-synthesis's blind reading, it cannot be completed: one agent writing the second case has already read its own first case and cannot unsee it. Solo mode here preserves the methodology and loses the guarantee — a weaker instrument, not merely a slower one. If you are running antilogy-verdict on Tier 1, discount the verdict accordingly, and treat a lopsided result as the likeliest place the missing isolation shows.
 
 Each subagent is scoped to its role. Permissions are constrained to what that agent actually needs. The orchestrator coordinates; the specialists execute.
 
@@ -43,7 +50,7 @@ Each subagent is scoped to its role. Permissions are constrained to what that ag
 
 Tier 2 produces genuinely better results. The reason subagents exist is that separated contexts reason more cleanly: `codebase-context` reads the repo without the ticket framing in its window; `ideation` synthesises both contexts without having watched them being gathered; `implementation` executes the plan without carrying the full history of the planning session. Each agent sees only what it needs, and nothing else.
 
-On Tier 1, a single agent holds everything — the ticket, the questions, the codebase reading, the plan proposals — in one growing context. The methodology is the same, but the reasoning is noisier. It works. It is not equivalent.
+On Tier 1, a single agent holds everything — the ticket, the questions, the codebase reading, the plan proposals — in one growing context. For socratic-dev, anamnesis-wiki, and dialectic-synthesis the methodology is the same and only the reasoning is noisier: it works, it is not equivalent. antilogy-verdict is the exception, and the sharper case — there the methodology itself degrades, because the isolation between the two cases *is* the method. See the note above.
 
 If you use Claude Code, use it with the subagents. If you use another tool, Tier 1 gives you the methodology — and the methodology alone is most of the value.
 
